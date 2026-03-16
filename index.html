@@ -1,0 +1,1117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Arkraft · Data Pipeline</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0a0c12;--surf:#0e1420;--card:#101827;--bdr:#1b2b40;--bdr2:#243650;
+  --txt:#e2ecf5;--mid:#5a7898;--dim:#2a4060;
+  --z1:#38bdf8;--z1d:rgba(56,189,248,.06);--z1dd:rgba(56,189,248,.12);
+  --z2:#a78bfa;--z2d:rgba(167,139,250,.06);--z2dd:rgba(167,139,250,.12);
+  --z3:#34d399;--z3d:rgba(52,211,153,.06);--z3dd:rgba(52,211,153,.12);
+  --cl:#fb7185;--hu:#fbbf24;--au:#60a5fa;--det:#475569;
+  --live:#34d399;--beta:#fbbf24;--plan:#475569}
+html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(--txt);
+  font-family:'Plus Jakarta Sans',sans-serif;-webkit-font-smoothing:antialiased}
+body::before{content:'';position:fixed;inset:0;z-index:0;
+  background-image:radial-gradient(circle,rgba(255,255,255,.013) 1px,transparent 1px);
+  background-size:40px 40px}
+
+/* TOP BAR */
+#topbar{position:fixed;top:0;left:0;right:0;height:46px;z-index:200;
+  background:rgba(10,12,18,.92);backdrop-filter:blur(16px);
+  border-bottom:1px solid var(--bdr);
+  display:flex;align-items:center;padding:0 2.5rem;gap:1.5rem}
+.tb-logo{font-weight:800;font-size:.85rem;letter-spacing:.1em;text-transform:uppercase;flex-shrink:0}
+.tb-sep{width:1px;height:16px;background:var(--bdr2);flex-shrink:0}
+.tb-title{flex:1;font-family:'JetBrains Mono',monospace;font-size:.62rem;
+  letter-spacing:.1em;text-transform:uppercase;color:var(--mid)}
+.tb-ctr{font-family:'JetBrains Mono',monospace;font-size:.62rem;color:var(--dim);letter-spacing:.06em}
+
+/* NAV */
+#dots{position:fixed;right:2rem;top:50%;transform:translateY(-50%);
+  display:flex;flex-direction:column;gap:7px;z-index:100}
+.dot{width:5px;height:5px;border-radius:3px;background:var(--dim);cursor:pointer;transition:all .3s}
+.dot.on{height:18px;background:var(--mid)}
+#arrows{position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%);
+  display:flex;gap:.6rem;z-index:100}
+.abtn{width:32px;height:32px;border-radius:50%;background:var(--surf);
+  border:1px solid var(--bdr);color:var(--mid);cursor:pointer;
+  display:flex;align-items:center;justify-content:center;font-size:.8rem;
+  transition:all .18s;user-select:none}
+.abtn:hover{border-color:var(--bdr2);color:var(--txt)}
+
+/* DECK */
+#deck{position:relative;width:100vw;height:100vh;overflow:hidden;z-index:1}
+.slide{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;
+  padding:3rem 3.5rem 2.5rem;padding-top:calc(46px + 1.8rem);
+  opacity:0;transform:translateY(22px);
+  transition:opacity .42s ease,transform .42s ease;pointer-events:none;overflow:hidden}
+.slide.active{opacity:1;transform:translateY(0);pointer-events:all}
+.slide.out{opacity:0;transform:translateY(-18px);transition:opacity .26s,transform .26s}
+
+/* TYPOGRAPHY */
+.eye{font-family:'JetBrains Mono',monospace;font-size:.63rem;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--mid);margin-bottom:.65rem;
+  display:flex;align-items:center;gap:.6rem}
+.eye::before{content:'';display:block;width:16px;height:1px;background:currentColor;opacity:.5}
+.eye.z1{color:var(--z1)}.eye.z2{color:var(--z2)}.eye.z3{color:var(--z3)}.eye.warn{color:var(--hu)}
+.hl{font-weight:800;line-height:1.1;letter-spacing:-.02em}
+code{font-family:'JetBrains Mono',monospace;font-size:.78em;padding:.1em .38em;
+  background:rgba(255,255,255,.07);border-radius:3px}
+
+/* STATUS BADGES */
+.st{display:inline-flex;align-items:center;gap:.3rem;font-family:'JetBrains Mono',monospace;
+  font-size:.5rem;letter-spacing:.06em;text-transform:uppercase;padding:.16rem .42rem;
+  border-radius:3px;font-weight:600;flex-shrink:0}
+.st::before{content:'';width:5px;height:5px;border-radius:50%;flex-shrink:0}
+.st-live{color:var(--live);background:rgba(52,211,153,.1)}.st-live::before{background:var(--live)}
+.st-beta{color:var(--beta);background:rgba(251,191,36,.1)}.st-beta::before{background:var(--beta)}
+.st-plan{color:#64748b;background:rgba(100,116,139,.1)}.st-plan::before{background:#64748b;opacity:.5}
+
+/* ═══════════════════════════════
+   S1 — THE PROBLEM
+═══════════════════════════════ */
+#s1{background:radial-gradient(ellipse 55% 50% at 10% 65%,rgba(251,113,133,.05),transparent 70%)}
+/* 3 horizontal battle rows */
+.battle-rows{display:flex;flex-direction:column;gap:.6rem;margin-top:1.2rem}
+.battle-row{display:grid;grid-template-columns:1fr 56px 1fr;align-items:center;gap:0}
+.br-before{padding:1rem 1.2rem;background:rgba(251,113,133,.04);border:1px solid rgba(251,113,133,.2);border-radius:10px 0 0 10px}
+.br-after{padding:1rem 1.2rem;background:rgba(52,211,153,.04);border:1px solid rgba(52,211,153,.2);border-radius:0 10px 10px 0}
+.br-mid{display:flex;align-items:center;justify-content:center;background:var(--surf);
+  border-top:1px solid var(--bdr);border-bottom:1px solid var(--bdr);
+  height:100%;font-family:'JetBrains Mono',monospace;font-size:.7rem;color:var(--dim);padding:.5rem 0}
+.br-topic{font-family:'JetBrains Mono',monospace;font-size:.52rem;letter-spacing:.1em;
+  text-transform:uppercase;margin-bottom:.35rem}
+.br-before .br-topic{color:var(--cl)}.br-after .br-topic{color:var(--live)}
+.br-head{font-weight:700;font-size:1rem;line-height:1.2;margin-bottom:.3rem}
+.br-before .br-head{color:var(--txt)}.br-after .br-head{color:var(--txt)}
+.br-sub{font-size:.74rem;color:var(--mid);line-height:1.5}
+.br-sub strong{font-weight:600}
+.br-before .br-sub strong{color:var(--cl)}.br-after .br-sub strong{color:var(--live)}
+/* Hero stat */
+.prob-hero{display:flex;align-items:center;justify-content:center;gap:2rem;
+  margin-top:1rem;padding:.9rem 2rem;
+  background:var(--surf);border:1px solid var(--bdr);border-radius:10px}
+.ph-val{font-family:'Bebas Neue',sans-serif;font-size:3.8rem;line-height:1;letter-spacing:.03em}
+.ph-val.old{color:rgba(251,113,133,.55);text-decoration:line-through;
+  text-decoration-color:rgba(251,113,133,.6);text-decoration-thickness:3px}
+.ph-val.new{color:var(--live)}
+.ph-arrow{font-family:'Bebas Neue',sans-serif;font-size:2.5rem;color:var(--dim)}
+.ph-lbl{font-family:'JetBrains Mono',monospace;font-size:.55rem;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--mid);text-align:center;max-width:200px;line-height:1.5}
+.ph-then{font-size:.78rem;color:var(--mid);line-height:1.5;max-width:280px}
+
+/* ═══════════════════════════════
+   S2 — THE ANSWER (Title)
+═══════════════════════════════ */
+#s2{display:grid !important;grid-template-columns:52% 1fr;gap:2.5rem;align-items:center}
+#s2 .s2l{display:flex;flex-direction:column}
+.brand{font-family:'JetBrains Mono',monospace;font-size:.68rem;color:var(--mid);
+  letter-spacing:.16em;text-transform:uppercase;margin-bottom:2rem;
+  display:flex;align-items:center;gap:.75rem}
+.brand::before{content:'';width:20px;height:1px;background:var(--mid)}
+.big{font-family:'Bebas Neue',sans-serif;
+  font-size:clamp(3.2rem,6.2vw,5.2rem);letter-spacing:.02em;line-height:.93;
+  margin-bottom:1.5rem}
+.big .a1{color:var(--z1)}
+.tagline{font-size:.92rem;color:var(--mid);max-width:500px;line-height:1.75;
+  margin-bottom:1.8rem;font-weight:400}
+.tagline strong{color:var(--txt)}
+.kpis{display:grid;grid-template-columns:repeat(2,1fr);gap:.6rem}
+.kpi{background:var(--card);border:1px solid var(--bdr);border-radius:8px;padding:.75rem 1rem}
+.kpi-v{font-family:'Bebas Neue',sans-serif;font-size:1.9rem;line-height:1;margin-bottom:.1rem}
+.kpi-l{font-size:.7rem;color:var(--mid);line-height:1.4}
+.kpi-l em{color:var(--txt);font-style:normal}
+
+/* Pipeline visual (answer slide right col) */
+.pv-wrap{display:flex;flex-direction:column;align-items:stretch;gap:0;animation:fadeUp .6s .2s both}
+.pv-db{display:flex;align-items:center;gap:.65rem;padding:.7rem 1rem;
+  background:var(--surf);border:1px solid var(--bdr);border-radius:8px;
+  font-family:'JetBrains Mono',monospace;font-size:.6rem;color:var(--mid);
+  text-transform:uppercase;letter-spacing:.1em;align-self:center;width:65%;
+  justify-content:center}
+.pv-conn{width:2px;height:20px;align-self:center;border-radius:1px}
+.pv-c1{background:linear-gradient(to bottom,var(--z1),transparent);opacity:.5}
+.pv-c2{background:linear-gradient(to bottom,var(--z2),transparent);opacity:.5}
+.pv-c3{background:linear-gradient(to bottom,var(--z3),transparent);opacity:.5}
+.pv-zone{border-radius:10px;border:1px solid;padding:.9rem 1rem}
+.pv-z1{border-color:rgba(56,189,248,.28);background:rgba(56,189,248,.04)}
+.pv-z2{border-color:rgba(167,139,250,.28);background:rgba(167,139,250,.04)}
+.pv-z3{border-color:rgba(52,211,153,.28);background:rgba(52,211,153,.04)}
+.pv-lbl{font-family:'JetBrains Mono',monospace;font-size:.57rem;letter-spacing:.1em;
+  text-transform:uppercase;margin-bottom:.5rem;display:flex;align-items:center;justify-content:space-between}
+.pv-z1 .pv-lbl{color:var(--z1)}.pv-z2 .pv-lbl{color:var(--z2)}.pv-z3 .pv-lbl{color:var(--z3)}
+.pv-steps{display:flex;align-items:center;flex-wrap:wrap;gap:.28rem}
+.pvs{font-size:.7rem;color:var(--txt);padding:.15rem .38rem;
+  background:rgba(255,255,255,.05);border-radius:3px;white-space:nowrap}
+.pvs-arr{font-size:.6rem;color:var(--dim)}
+.pv-sep{height:1px;background:var(--bdr);margin:.4rem 0}
+
+/* ═══════════════════════════════
+   S3 — THE INSIGHT (AI + Gates)
+═══════════════════════════════ */
+#s3{background:radial-gradient(ellipse 50% 50% at 50% 50%,rgba(167,139,250,.04),transparent 70%)}
+.insight-grid{display:grid;grid-template-columns:1fr 48px 1fr;gap:0;margin-top:1.3rem;align-items:start}
+.ins-col{background:var(--card);border:1px solid var(--bdr);border-radius:12px;padding:1.5rem 1.75rem}
+.ins-col.ai-side{border-color:rgba(251,113,133,.25);background:rgba(251,113,133,.03)}
+.ins-col.gate-side{border-color:rgba(96,165,250,.25);background:rgba(96,165,250,.03)}
+.ins-badge{display:inline-flex;align-items:center;gap:.4rem;font-family:'JetBrains Mono',monospace;
+  font-size:.56rem;letter-spacing:.1em;text-transform:uppercase;padding:.22rem .6rem;
+  border-radius:5px;margin-bottom:.7rem}
+.ins-badge.ai{color:var(--cl);background:rgba(251,113,133,.12)}
+.ins-badge.gate{color:var(--au);background:rgba(96,165,250,.12)}
+.ins-title{font-weight:800;font-size:1.25rem;margin-bottom:.65rem}
+.ins-desc{font-size:.79rem;color:var(--mid);line-height:1.7;margin-bottom:1rem;display:none}
+.ins-examples{display:flex;flex-direction:column;gap:.55rem}
+.ins-ex{display:flex;align-items:flex-start;gap:.6rem;font-size:.79rem;line-height:1.5}
+.ins-ex-dot{width:4px;height:4px;border-radius:50%;flex-shrink:0;margin-top:.38rem}
+.ai-side .ins-ex-dot{background:var(--cl)}
+.gate-side .ins-ex-dot{background:var(--au)}
+.ins-ex-txt{color:var(--mid)}
+.ins-ex-txt strong{color:var(--txt)}
+.ins-mid{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.5rem;padding-top:3rem}
+.ins-vs{font-family:'Bebas Neue',sans-serif;font-size:2rem;color:var(--bdr2);line-height:1}
+.ins-pattern{margin-top:1.2rem;padding:.75rem 1.2rem;
+  background:var(--surf);border:1px solid var(--bdr);border-radius:9px}
+.ins-pattern-lbl{font-family:'JetBrains Mono',monospace;font-size:.55rem;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--mid);margin-bottom:.55rem}
+.ins-seq{display:flex;align-items:center;gap:.35rem;flex-wrap:wrap}
+.ins-seq-step{font-size:.65rem;padding:.18rem .5rem;border-radius:4px;font-family:'JetBrains Mono',monospace;
+  letter-spacing:.02em;white-space:nowrap}
+.is-ai{background:rgba(251,113,133,.12);color:var(--cl)}
+.is-gate{background:rgba(96,165,250,.12);color:var(--au)}
+.is-det{background:rgba(71,85,105,.18);color:#94a3b8}
+.ins-seq-arr{color:var(--dim);font-size:.7rem}
+.ins-note{margin-top:.8rem;font-size:.73rem;color:var(--mid);line-height:1.55;font-style:italic}
+.ins-note strong{color:var(--txt);font-style:normal}
+
+/* ═══════════════════════════════
+   S4 — ARCHITECTURE OVERVIEW
+═══════════════════════════════ */
+#s4 .zones{display:grid;grid-template-columns:1fr 44px 1fr 44px 1fr;
+  align-items:center;margin-top:1.1rem}
+.zc{background:var(--card);border:1px solid var(--bdr);border-radius:12px;
+  padding:1.5rem;display:flex;flex-direction:column;position:relative;overflow:hidden}
+.zc::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;border-radius:12px 12px 0 0}
+.zc.z1::before{background:linear-gradient(90deg,var(--z1),transparent 80%)}
+.zc.z2::before{background:linear-gradient(90deg,var(--z2),transparent 80%)}
+.zc.z3::before{background:linear-gradient(90deg,var(--z3),transparent 80%)}
+.zn{font-family:'JetBrains Mono',monospace;font-size:.58rem;letter-spacing:.1em;
+  text-transform:uppercase;margin-bottom:.45rem;display:flex;align-items:center;
+  justify-content:space-between;gap:.5rem}
+.zc.z1 .zn{color:var(--z1)}.zc.z2 .zn{color:var(--z2)}.zc.z3 .zn{color:var(--z3)}
+.zt{font-weight:700;font-size:1.15rem;margin-bottom:.45rem}
+.zd{font-size:.76rem;color:var(--mid);line-height:1.6;margin-bottom:.9rem}
+.zdiv{height:1px;background:var(--bdr);margin-bottom:.8rem}
+.zsteps{display:flex;flex-direction:column;gap:.32rem}
+.zsi{display:flex;align-items:flex-start;gap:.55rem;font-size:.71rem;color:var(--mid);line-height:1.4}
+.dsm{width:4px;height:4px;border-radius:50%;flex-shrink:0;margin-top:.35rem}
+.zc.z1 .dsm{background:var(--z1)}.zc.z2 .dsm{background:var(--z2)}.zc.z3 .dsm{background:var(--z3)}
+/* Horizontal connector */
+.zcon{display:flex;align-items:center;justify-content:center;align-self:stretch}
+.zcon-arr{display:flex;align-items:center;width:100%}
+.zcon-line{flex:1;height:1px;background:linear-gradient(to right,transparent,var(--bdr2),var(--bdr2))}
+.zcon-head{width:0;height:0;border-top:5px solid transparent;border-bottom:5px solid transparent;
+  border-left:8px solid var(--bdr2)}
+/* Step-flow summary bar */
+.sfrow{display:flex;align-items:center;gap:0;margin-top:1.1rem;
+  background:var(--surf);border:1px solid var(--bdr);border-radius:10px;
+  padding:.65rem 1.1rem;flex-wrap:nowrap;overflow:hidden}
+.sf-zone-lbl{font-family:'JetBrains Mono',monospace;font-size:.5rem;text-transform:uppercase;
+  letter-spacing:.1em;padding:.14rem .42rem;border-radius:3px;white-space:nowrap;flex-shrink:0}
+.sfz1{color:var(--z1);background:rgba(56,189,248,.1)}
+.sfz2{color:var(--z2);background:rgba(167,139,250,.1)}
+.sfz3{color:var(--z3);background:rgba(52,211,153,.1)}
+.sf-step{font-size:.66rem;color:var(--mid);white-space:nowrap;flex-shrink:0;padding:0 .28rem}
+.sf-arr{color:var(--dim);font-size:.68rem;flex-shrink:0;padding:0 .12rem}
+.sf-mid-arr{display:flex;align-items:center;flex-shrink:0;margin:0 .55rem}
+.sf-mid-ln{width:20px;height:1px;background:var(--bdr2)}
+.sf-mid-hd{width:0;height:0;border-top:4px solid transparent;border-bottom:4px solid transparent;border-left:6px solid var(--bdr2)}
+.sf-touch{font-family:'JetBrains Mono',monospace;font-size:.48rem;letter-spacing:.04em;
+  color:var(--hu);background:rgba(251,191,36,.1);padding:.09rem .3rem;border-radius:3px;
+  margin-left:.25rem;flex-shrink:0}
+/* slide 4 animation stagger */
+.slide.active .zc:nth-child(1){animation:fadeUp .45s .05s both}
+.slide.active .zc:nth-child(3){animation:fadeUp .45s .12s both}
+.slide.active .zc:nth-child(5){animation:fadeUp .45s .19s both}
+
+/* ═══════════════════════════════
+   S5 — ZONE 1
+═══════════════════════════════ */
+#s5{background:radial-gradient(ellipse 65% 60% at 95% 50%,var(--z1d),transparent 70%)}
+.g3,.g2{display:grid;gap:.75rem;margin-top:.7rem}
+.g3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.g2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.sc{background:var(--card);border:1px solid var(--bdr);border-radius:10px;
+  padding:1.2rem 1.35rem;position:relative;overflow:hidden;transition:border-color .2s,transform .15s}
+.sc:hover{border-color:var(--bdr2);transform:translateY(-1px)}
+.sc::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;border-radius:10px 10px 0 0}
+.sc.z1::before{background:linear-gradient(90deg,var(--z1),transparent 70%)}
+.sc.z2::before{background:linear-gradient(90deg,var(--z2),transparent 70%)}
+.sc::after{content:attr(data-n);position:absolute;bottom:-.5rem;right:.5rem;
+  font-family:'Bebas Neue',sans-serif;font-size:4.5rem;line-height:1;
+  color:white;opacity:.035;pointer-events:none;user-select:none}
+.slide.active .sc{animation:fadeUp .4s both}
+.slide.active .g3 .sc:nth-child(1){animation-delay:.04s}
+.slide.active .g3 .sc:nth-child(2){animation-delay:.11s}
+.slide.active .g3 .sc:nth-child(3){animation-delay:.18s}
+.slide.active .g2 .sc:nth-child(1){animation-delay:.24s}
+.slide.active .g2 .sc:nth-child(2){animation-delay:.30s}
+.sc .stop{display:flex;align-items:center;justify-content:space-between;margin-bottom:.65rem}
+.sc .snum{font-family:'JetBrains Mono',monospace;font-size:.56rem;letter-spacing:.06em;color:var(--mid)}
+.badge{font-family:'JetBrains Mono',monospace;font-size:.5rem;letter-spacing:.05em;
+  text-transform:uppercase;padding:.16rem .44rem;border-radius:4px;font-weight:500}
+.bc{background:rgba(251,113,133,.12);color:var(--cl)}
+.bd{background:rgba(71,85,105,.18);color:#94a3b8}
+.bh{background:rgba(251,191,36,.12);color:var(--hu)}
+.ba{background:rgba(96,165,250,.12);color:var(--au)}
+.sc .snm{font-weight:700;font-size:.95rem;margin-bottom:.42rem;line-height:1.2}
+.sc .sdesc{font-size:.75rem;color:var(--mid);line-height:1.58}
+.strip{margin-top:.65rem;background:var(--surf);border:1px solid var(--bdr);
+  border-radius:8px;padding:.7rem 1rem;display:flex;align-items:flex-start;gap:.8rem}
+.strip-tag{font-family:'JetBrains Mono',monospace;font-size:.52rem;letter-spacing:.08em;
+  text-transform:uppercase;flex-shrink:0;padding:.18rem .46rem;border-radius:3px;margin-top:.1rem}
+.strip-body{font-size:.74rem;color:var(--mid);line-height:1.55}
+.strip-body strong{color:var(--txt);font-weight:600}
+
+/* ═══════════════════════════════
+   S6 — ZONE 2
+═══════════════════════════════ */
+#s6{background:radial-gradient(ellipse 65% 60% at 5% 50%,var(--z2d),transparent 70%)}
+.pattern-bar{display:flex;align-items:center;justify-content:center;gap:.45rem;
+  margin:.55rem 0;padding:.6rem 1.1rem;
+  background:var(--surf);border:1px solid var(--bdr);border-radius:8px}
+.pb-step{display:flex;flex-direction:column;align-items:center;gap:.25rem;min-width:76px}
+.pb-badge{font-family:'JetBrains Mono',monospace;font-size:.5rem;letter-spacing:.05em;
+  text-transform:uppercase;padding:.14rem .38rem;border-radius:3px}
+.pb-name{font-size:.62rem;font-family:'JetBrains Mono',monospace;color:var(--mid);
+  letter-spacing:.02em;text-align:center}
+.pb-arr{color:var(--dim);font-size:.85rem;margin-bottom:1rem}
+.pb-ai .pb-badge{background:rgba(251,113,133,.12);color:var(--cl)}
+.pb-gate .pb-badge{background:rgba(96,165,250,.12);color:var(--au)}
+.pb-det .pb-badge{background:rgba(71,85,105,.18);color:#94a3b8}
+
+/* ═══════════════════════════════
+   S7 — ZONE 3 CATALOG
+═══════════════════════════════ */
+#s7{background:radial-gradient(ellipse 65% 60% at 50% 95%,var(--z3d),transparent 70%)}
+#s7 .tiers{display:grid;grid-template-columns:1fr 52px 1fr 52px 1fr;
+  align-items:stretch;margin-top:1.1rem}
+.tc{background:var(--card);border:1px solid var(--bdr);border-radius:12px;padding:1.75rem 1.6rem;
+  display:flex;flex-direction:column}
+.tc.ts{border-color:rgba(251,191,36,.3)}
+.tc.tp{border-color:rgba(52,211,153,.4);background:linear-gradient(135deg,var(--card),rgba(52,211,153,.04))}
+.tl{font-family:'JetBrains Mono',monospace;font-size:.56rem;letter-spacing:.1em;
+  text-transform:uppercase;margin-bottom:.55rem;display:flex;align-items:center;justify-content:space-between}
+.tc.tr .tl{color:var(--mid)}.tc.ts .tl{color:var(--hu)}.tc.tp .tl{color:var(--z3)}
+.tt{font-weight:700;font-size:1.2rem;margin-bottom:.45rem}
+.tb{font-size:.77rem;color:var(--mid);line-height:1.65;margin-bottom:.85rem;flex:1}
+.tuse{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:.55rem;
+  letter-spacing:.06em;text-transform:uppercase;padding:.18rem .55rem;border-radius:4px;
+  margin-bottom:.75rem}
+.tc.tr .tuse{background:rgba(255,255,255,.05);color:var(--mid)}
+.tc.ts .tuse{background:rgba(251,191,36,.1);color:var(--hu)}
+.tc.tp .tuse{background:rgba(52,211,153,.1);color:var(--z3)}
+.tcon{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.5rem}
+.tcon-ln{width:20px;height:1px;background:var(--bdr)}
+.tcon-lbl{font-family:'JetBrains Mono',monospace;font-size:.48rem;color:var(--mid);
+  text-align:center;text-transform:uppercase;letter-spacing:.04em;line-height:1.5}
+.tcon-hd{width:0;height:0;border-top:4px solid transparent;border-bottom:4px solid transparent;
+  border-left:6px solid var(--bdr)}
+.tresearch-note{margin-top:1rem;padding:.7rem 1.1rem;
+  background:var(--z3dd);border:1px solid rgba(52,211,153,.18);border-radius:8px;
+  font-size:.77rem;color:var(--txt);line-height:1.55}
+.tresearch-note strong{color:var(--live)}
+.tier-features{display:flex;flex-direction:column;gap:.3rem}
+.tf{display:flex;align-items:flex-start;gap:.5rem;font-size:.71rem;color:var(--mid);line-height:1.4}
+.tf-dot{width:3px;height:3px;border-radius:50%;flex-shrink:0;margin-top:.45rem}
+.tc.tr .tf-dot{background:var(--mid)}.tc.ts .tf-dot{background:var(--hu)}.tc.tp .tf-dot{background:var(--live)}
+
+/* ═══════════════════════════════
+   S8 — HUMAN IN THE LOOP
+═══════════════════════════════ */
+#s8 .mgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:.9rem;margin-top:1.1rem}
+.mc{background:var(--card);border:1px solid var(--bdr);border-radius:10px;padding:1.4rem 1.3rem}
+.mnum{font-family:'Bebas Neue',sans-serif;font-size:2.5rem;color:var(--bdr2);line-height:1;margin-bottom:.45rem}
+.mwhen{font-family:'JetBrains Mono',monospace;font-size:.55rem;text-transform:uppercase;
+  letter-spacing:.08em;color:var(--hu);margin-bottom:.32rem}
+.mttl{font-weight:700;font-size:1rem;margin-bottom:.4rem}
+.mbdy{font-size:.77rem;color:var(--mid);line-height:1.6}
+.mbdy strong{color:var(--txt);font-weight:600}
+.mwhy{margin-top:.65rem;padding:.55rem .75rem;background:rgba(251,191,36,.05);
+  border:1px solid rgba(251,191,36,.15);border-radius:6px;font-size:.72rem;
+  color:var(--mid);line-height:1.45}
+.mwhy strong{color:var(--hu);font-style:normal}
+.astrip{margin-top:1rem;background:var(--z3d);border:1px solid rgba(52,211,153,.15);
+  border-radius:8px;padding:.75rem 1.1rem;display:flex;align-items:center;gap:.75rem}
+.astrip-ico{font-size:.9rem;flex-shrink:0}
+.astrip-txt{font-size:.77rem;color:var(--txt);line-height:1.5}
+.astrip-txt em{color:var(--z3);font-style:normal;font-weight:600}
+
+/* ═══════════════════════════════
+   S9 — IMPLEMENTATION STATUS
+═══════════════════════════════ */
+#s9{background:radial-gradient(ellipse 50% 40% at 50% 80%,rgba(52,211,153,.04),transparent 70%)}
+.status-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-top:1.1rem}
+.sg-col{background:var(--card);border:1px solid var(--bdr);border-radius:10px;
+  padding:1.2rem;display:flex;flex-direction:column;gap:.55rem}
+.sg-col-hdr{display:flex;align-items:center;gap:.55rem;margin-bottom:.2rem}
+.sg-col-icon{width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:.9rem;flex-shrink:0}
+.sg-col-icon.live{background:rgba(52,211,153,.12)}
+.sg-col-icon.beta{background:rgba(251,191,36,.1)}
+.sg-col-icon.plan{background:rgba(100,116,139,.08)}
+.sg-col-title{font-weight:700;font-size:.95rem}
+.sg-col-sub{font-size:.67rem;color:var(--mid);margin-top:-.2rem}
+.sg-item{display:flex;align-items:center;justify-content:space-between;gap:.5rem;
+  padding:.45rem .6rem;background:var(--surf);border:1px solid var(--bdr);border-radius:6px}
+.sg-item-name{font-size:.74rem;color:var(--txt);font-weight:500}
+.sg-item-zone{font-family:'JetBrains Mono',monospace;font-size:.48rem;text-transform:uppercase;
+  padding:.1rem .3rem;border-radius:3px;flex-shrink:0}
+.sgz1{color:var(--z1);background:rgba(56,189,248,.1)}
+.sgz2{color:var(--z2);background:rgba(167,139,250,.1)}
+.sgz3{color:var(--z3);background:rgba(52,211,153,.1)}
+.sg-col.beta-col .sg-item{border-color:rgba(251,191,36,.12);background:rgba(251,191,36,.03)}
+.sg-col.plan-col .sg-item{opacity:.65;border-style:dashed}
+.roadmap-note{margin-top:1rem;padding:.7rem 1.2rem;
+  background:var(--surf);border:1px solid var(--bdr);border-radius:9px;
+  display:flex;align-items:flex-start;gap:.85rem}
+.rn-icon{flex-shrink:0;font-size:.85rem;margin-top:.05rem}
+.rn-text{font-size:.76rem;color:var(--mid);line-height:1.55}
+.rn-text strong{color:var(--txt);font-weight:600}
+
+/* ═══════════════════════════════
+   S10 — END-TO-END EXAMPLE
+═══════════════════════════════ */
+#s10 .tl{display:flex;flex-direction:column;max-height:60vh;overflow-y:auto;
+  margin-top:.9rem;scrollbar-width:thin;scrollbar-color:var(--bdr) transparent}
+.tli{display:grid;grid-template-columns:22px 72px 1fr;gap:.9rem;
+  padding:.75rem 0;border-bottom:1px solid var(--bdr);align-items:flex-start}
+.tli:last-child{border-bottom:none}
+.tli-n{font-family:'JetBrains Mono',monospace;font-size:.56rem;color:var(--dim);padding-top:3px}
+.tli-z{font-family:'JetBrains Mono',monospace;font-size:.52rem;letter-spacing:.04em;
+  text-transform:uppercase;padding:.18rem .38rem;border-radius:3px;text-align:center;height:fit-content}
+.tz1{background:rgba(56,189,248,.1);color:var(--z1)}
+.tz2{background:rgba(167,139,250,.1);color:var(--z2)}
+.tz3{background:rgba(52,211,153,.1);color:var(--z3)}
+.tli-c{font-size:.79rem;color:var(--mid);line-height:1.58}
+.tli-c strong{color:var(--txt);font-weight:600}
+.tli-c em{color:var(--hu);font-style:normal;font-weight:500}
+
+/* KEYFRAMES */
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+@keyframes blink{0%,100%{opacity:.45}50%{opacity:.9}}
+</style>
+</head>
+<body>
+
+<div id="topbar">
+  <span class="tb-logo">ARKRAFT</span>
+  <div class="tb-sep"></div>
+  <span class="tb-title" id="slide-label">Data Pipeline Overview</span>
+  <span class="tb-ctr" id="ctr">1 / 10</span>
+</div>
+<div id="dots"></div>
+<div id="arrows">
+  <button class="abtn" id="bp">&#8592;</button>
+  <button class="abtn" id="bn">&#8594;</button>
+</div>
+
+<div id="deck">
+
+<!-- ══════════════════════════════════
+     S1 · THE PROBLEM
+══════════════════════════════════ -->
+<div class="slide active" id="s1" data-label="The Problem">
+  <div class="eye warn">The Data Problem</div>
+  <h2 class="hl" style="font-size:clamp(1.6rem,3vw,2.6rem);margin-bottom:.3rem">
+    The bottleneck in quant research is<br><span style="color:var(--cl)">getting reliable data, not running strategies.</span>
+  </h2>
+  <p style="font-size:.85rem;color:var(--mid);max-width:780px;line-height:1.65;margin-bottom:.1rem">
+    Every new data source is a custom project: schema discovery, SQL authoring, quality negotiation, extraction scripts.
+    A data engineer who understands both the source schema <em style="color:var(--txt)">and</em> the research domain is required — and scarce.
+    The result: researchers wait weeks for data that should be available in days.
+  </p>
+  <div class="battle-rows">
+    <div class="battle-row">
+      <div class="br-before">
+        <div class="br-topic">Onboarding a new data source</div>
+        <div class="br-head">Manual: schema exploration, SQL, QA</div>
+        <div class="br-sub">Requires a data engineer who understands the source schema <strong>and</strong> the research domain. Each new source is a custom project — weeks of work before a researcher can use it.</div>
+      </div>
+      <div class="br-mid">→</div>
+      <div class="br-after">
+        <div class="br-topic">Our design approach</div>
+        <div class="br-head">AI interprets schema. One human decision.</div>
+        <div class="br-sub">AI scans schema, proposes research-relevant tables, writes and self-tests extraction scripts. The researcher reviews a data preview and decides which tables are worth extracting. <strong>No SQL. No manual pipeline authoring.</strong></div>
+      </div>
+    </div>
+    <div class="battle-row">
+      <div class="br-before">
+        <div class="br-topic">When the source database changes</div>
+        <div class="br-head">Silent failures, broken backtests</div>
+        <div class="br-sub">Schema changes break extraction scripts. Stale data silently corrupts backtests. You discover the failure <strong>when your strategy stops making sense</strong> — not when the data broke.</div>
+      </div>
+      <div class="br-mid">→</div>
+      <div class="br-after">
+        <div class="br-topic">Our design approach</div>
+        <div class="br-head">Scheduled incremental syncs, re-checked quality</div>
+        <div class="br-sub">Incremental syncs are designed to append new data on a configured schedule. Quality gates re-run on each sync. <strong>The goal: source changes surface as pipeline warnings, not silent failures.</strong></div>
+      </div>
+    </div>
+    <div class="battle-row">
+      <div class="br-before">
+        <div class="br-topic">Data trust across the team</div>
+        <div class="br-head">Everyone has their own version</div>
+        <div class="br-sub">Each researcher maintains personal copies of "the same" dataset with unknown cleaning differences. <strong>No shared confidence model</strong> — you don't know if a colleague's data is safe to use.</div>
+      </div>
+      <div class="br-mid">→</div>
+      <div class="br-after">
+        <div class="br-topic">Our design approach</div>
+        <div class="br-head">One catalog. Explicit, human-approved tiers.</div>
+        <div class="br-sub">Research → Staging → Production. Each promotion requires a deliberate decision. <strong>The tier tells the team what the data has been verified for</strong> — exploration, backtesting, or live strategy.</div>
+      </div>
+    </div>
+  </div>
+  <div class="prob-hero">
+    <div style="flex:1;font-size:.82rem;color:var(--mid);line-height:1.7">
+      The core thesis: between a raw external database and a trusted research asset,
+      there are <strong style="color:var(--txt)">exactly three decisions that require domain expertise</strong> —
+      everything else is either deterministic or automatable.
+      The pipeline is built around that constraint.
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+     S2 · THE ANSWER
+══════════════════════════════════ -->
+<div class="slide" id="s2" data-label="Arkraft Data Pipeline">
+  <div class="s2l">
+    <div class="brand">ARKRAFT · DATA PIPELINE · OUR APPROACH</div>
+    <div class="big">
+      Raw Database.<br>
+      <span class="a1">Research Asset.</span><br>
+      Three Decisions.
+    </div>
+    <p class="tagline">
+      Our design hypothesis: you should need to make exactly <strong>three domain decisions</strong>
+      to turn an external database into a versioned, quality-gated research asset —
+      everything else should be deterministic or automatable.
+      This is the architecture we're building around that hypothesis.
+    </p>
+    <div class="kpis">
+      <div class="kpi">
+        <div class="kpi-v" style="color:var(--z1)">3</div>
+        <div class="kpi-l">Domain decisions designed into the pipeline<br><em>select, disambiguate, promote</em></div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-v" style="color:var(--z2)">11</div>
+        <div class="kpi-l">Pipeline steps across 3 zones<br><em>AI interpretation + deterministic gates</em></div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-v" style="color:var(--hu)">6</div>
+        <div class="kpi-l">Quality gates per dataset (CM Check)<br><em>enforced deterministically, no AI</em></div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-v" style="color:var(--live)">0</div>
+        <div class="kpi-l">Manual interventions designed for<br><em>ongoing data maintenance</em></div>
+      </div>
+    </div>
+  </div>
+  <!-- Right: pipeline flow visual -->
+  <div class="pv-wrap">
+    <div class="pv-db">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+        <ellipse cx="8" cy="4" rx="6" ry="2.5" stroke="#5a7898" stroke-width="1.2"/>
+        <path d="M2 4v4c0 1.38 2.69 2.5 6 2.5S14 9.38 14 8V4" stroke="#5a7898" stroke-width="1.2"/>
+        <path d="M2 8v4c0 1.38 2.69 2.5 6 2.5S14 13.38 14 12V8" stroke="#5a7898" stroke-width="1.2"/>
+      </svg>
+      External Database
+    </div>
+    <div class="pv-conn pv-c1"></div>
+    <div class="pv-zone pv-z1">
+      <div class="pv-lbl">Zone 1 · Data Source <span class="st st-live">Live</span></div>
+      <div class="pv-steps">
+        <span class="pvs">Scan</span><span class="pvs-arr">→</span>
+        <span class="pvs">Propose</span><span class="pvs-arr">→</span>
+        <span class="pvs">Trial</span>
+      </div>
+      <div class="pv-sep"></div>
+      <div class="pv-steps">
+        <span class="pvs">Schedule</span><span class="pvs-arr">→</span>
+        <span class="pvs">Full Extract</span>
+      </div>
+    </div>
+    <div class="pv-conn pv-c2"></div>
+    <div class="pv-zone pv-z2">
+      <div class="pv-lbl">Zone 2 · Pipeline <span class="st st-live">Live</span></div>
+      <div class="pv-steps">
+        <span class="pvs">Normalize</span><span class="pvs-arr">→</span>
+        <span class="pvs">CM Check</span><span class="pvs-arr">→</span>
+        <span class="pvs">Spec</span>
+      </div>
+      <div class="pv-sep"></div>
+      <div class="pv-steps">
+        <span class="pvs">Transform</span><span class="pvs-arr">→</span>
+        <span class="pvs">Register</span>
+      </div>
+    </div>
+    <div class="pv-conn pv-c3"></div>
+    <div class="pv-zone pv-z3">
+      <div class="pv-lbl">Zone 3 · Catalog <span class="st st-live">Live</span></div>
+      <div class="pv-steps">
+        <span class="pvs">Research</span><span class="pvs-arr">→</span>
+        <span class="pvs">Staging</span><span class="pvs-arr">→</span>
+        <span class="pvs">Production</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+     S3 · THE CORE INSIGHT
+══════════════════════════════════ -->
+<div class="slide" id="s3" data-label="Core Design Choice">
+  <div class="eye">Core Design Argument</div>
+  <h2 class="hl" style="font-size:clamp(1.4rem,2.5vw,2.1rem);margin-bottom:.3rem">
+    Why Not a Fully AI Pipeline?
+  </h2>
+  <p style="font-size:.84rem;color:var(--mid);max-width:750px;line-height:1.65;margin-bottom:.2rem">
+    The obvious path: let an AI model handle the entire pipeline end-to-end.
+    We tried it. The problem: AI errors compound across steps — by step 5, you
+    can't tell what went wrong or why. So we split the pipeline in two.
+    <strong style="color:var(--txt)">AI handles the steps where context matters. Deterministic gates handle the steps where the rule can be stated precisely.</strong>
+    The alternation is not a compromise — it's the design.
+  </p>
+  <div class="insight-grid">
+    <div class="ins-col ai-side">
+      <span class="ins-badge ai">🤖 Claude (AI)</span>
+      <div class="ins-title">Steps with no clean rule</div>
+      <div class="ins-desc">Used where the task requires domain expertise, semantic understanding, or resolution of genuine ambiguity that <em style="color:var(--cl);font-style:normal">cannot be expressed as a rule</em>.</div>
+      <div class="ins-examples">
+        <div class="ins-ex"><div class="ins-ex-dot"></div><div class="ins-ex-txt"><strong>Schema analysis</strong> — "daily_order_flow_by_sector" is research-relevant; "session_tokens" is operational noise. This requires domain knowledge, not a regex.</div></div>
+        <div class="ins-ex"><div class="ins-ex-dot"></div><div class="ins-ex-txt"><strong>Column semantics</strong> — "adj_close" is a price field; "sedol" is an entity ID; "is_deleted" is a soft-delete flag. AI resolves this from context; no rule set covers every naming convention.</div></div>
+        <div class="ins-ex"><div class="ins-ex-dot"></div><div class="ins-ex-txt"><strong>Entity dimension</strong> — Should this dataset be indexed by ticker, SEDOL, or ISIN? The answer depends on how the team plans to join it to other datasets. AI asks if unsure.</div></div>
+      </div>
+    </div>
+    <div class="ins-mid">
+      <div class="ins-vs">vs</div>
+    </div>
+    <div class="ins-col gate-side">
+      <span class="ins-badge gate">⚙️ Deterministic Gate</span>
+      <div class="ins-title">Steps with a precise rule</div>
+      <div class="ins-desc">Used where the standard <em style="color:var(--au);font-style:normal">can be stated precisely</em> and must be enforced without exception. No AI — intentionally. Gate pass/fail is the audit trail.</div>
+      <div class="ins-examples">
+        <div class="ins-ex"><div class="ins-ex-dot"></div><div class="ins-ex-txt"><strong>CM Check (6 gates)</strong> — entity column present, date parseable, value numeric, null rate &lt;threshold, no duplicate (entity, date) rows, minimum row count. Pass/fail, no ambiguity.</div></div>
+        <div class="ins-ex"><div class="ins-ex-dot"></div><div class="ins-ex-txt"><strong>Register</strong> — catalog write is a contract: cm_id uniqueness enforced, schema validated, full lineage recorded. If CM Check didn't pass, Register cannot run. No exceptions.</div></div>
+        <div class="ins-ex"><div class="ins-ex-dot"></div><div class="ins-ex-txt"><strong>Tier promotion</strong> — Research→Staging→Production requires explicit human approval. The system never auto-promotes. If Production data breaks, the approver is traceable.</div></div>
+      </div>
+    </div>
+  </div>
+  <div class="ins-pattern">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;align-items:start">
+      <div>
+        <div class="ins-pattern-lbl">Zone 2 Execution Sequence</div>
+        <div class="ins-seq">
+          <span class="ins-seq-step is-ai">AI · Detect-Normalize</span>
+          <span class="ins-seq-arr">→</span>
+          <span class="ins-seq-step is-gate">Gate · CM Check</span>
+          <span class="ins-seq-arr">→</span>
+          <span class="ins-seq-step is-ai">AI · Spec</span>
+          <span class="ins-seq-arr">→</span>
+          <span class="ins-seq-step is-ai">AI · Transform</span>
+          <span class="ins-seq-arr">→</span>
+          <span class="ins-seq-step is-det">Det · Register</span>
+        </div>
+        <div class="ins-note" style="margin-top:.6rem">If a dataset passes CM Check, it has met 6 measurable criteria — regardless of which AI model ran, which person configured it, or when it ran. <strong>The gate result is the audit trail.</strong></div>
+      </div>
+      <div>
+        <div class="ins-pattern-lbl" style="color:var(--au)">Why not Airflow + dbt?</div>
+        <div class="ins-note" style="margin-top:.4rem;font-style:normal">Traditional ETL tools are authoring tools — a data engineer writes the pipeline. This approach fails when you don't have a data engineer who knows both the source schema and the research domain. Our approach: AI authors the interpretation steps (<code>Detect-Normalize</code>, <code>Spec</code>, <code>Transform</code>). Deterministic gates (<code>CM Check</code>, <code>Register</code>) verify the result. <strong style="color:var(--txt)">The authoring problem becomes an AI problem. The verification problem stays deterministic.</strong></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+     S4 · ARCHITECTURE OVERVIEW
+══════════════════════════════════ -->
+<div class="slide" id="s4" data-label="Architecture Overview">
+  <div class="eye">Architecture</div>
+  <h2 class="hl" style="font-size:clamp(1.4rem,2.5vw,2.1rem);margin-bottom:.3rem">
+    Three Zones. Each with a Distinct Failure Mode.
+  </h2>
+  <p style="font-size:.83rem;color:var(--mid);max-width:680px;line-height:1.65;margin-bottom:.15rem">
+    The three-zone split isn't arbitrary — each zone has a different error class.
+    Zone 1 fails at selection (wrong tables). Zone 2 fails at quality (bad data format).
+    Zone 3 fails at trust (premature promotion). Separating them makes failures diagnosable.
+  </p>
+  <div class="zones">
+    <div class="zc z1">
+      <div class="zn">Zone 1 · Data Source <span class="st st-live">Live</span></div>
+      <div class="zt">Connect &amp; Extract</div>
+      <div class="zd">Designed to automate everything up to the researcher's first decision: AI analyses schema, proposes tables, writes and tests extraction scripts. Human decides which tables are worth extracting.</div>
+      <div class="zdiv"></div>
+      <div class="zsteps">
+        <div class="zsi"><div class="dsm"></div>Scan — schema metadata only</div>
+        <div class="zsi"><div class="dsm"></div>Propose — AI selects research tables</div>
+        <div class="zsi"><div class="dsm"></div>Trial — script written &amp; auto-tested</div>
+        <div class="zsi"><div class="dsm"></div>Schedule — <em style="color:var(--hu)">you set cadence</em> (TP 1)</div>
+        <div class="zsi"><div class="dsm"></div>Full Extract → Incremental Extract</div>
+      </div>
+    </div>
+    <div class="zcon"><div class="zcon-arr"><div class="zcon-line"></div><div class="zcon-head"></div></div></div>
+    <div class="zc z2">
+      <div class="zn">Zone 2 · Pipeline <span class="st st-live">Live</span></div>
+      <div class="zt">Process &amp; Validate</div>
+      <div class="zd">Transforms raw Parquet into the standardized catalog format. AI steps handle column interpretation; deterministic gates enforce measurable quality standards. The alternation is the key design decision.</div>
+      <div class="zdiv"></div>
+      <div class="zsteps">
+        <div class="zsi"><div class="dsm"></div>Detect-Normalize — column role detection (AI)</div>
+        <div class="zsi"><div class="dsm"></div>CM Check — 6 quality gates, no AI</div>
+        <div class="zsi"><div class="dsm"></div>Spec — <em style="color:var(--hu)">cm_id confirmed</em> if ambiguous (TP 2)</div>
+        <div class="zsi"><div class="dsm"></div>Transform — long-format → 2D pivot (AI)</div>
+        <div class="zsi"><div class="dsm"></div>Register — catalog API write, deterministic</div>
+      </div>
+    </div>
+    <div class="zcon"><div class="zcon-arr"><div class="zcon-line"></div><div class="zcon-head"></div></div></div>
+    <div class="zc z3">
+      <div class="zn">Zone 3 · Catalog <span class="st st-live">Live</span></div>
+      <div class="zt">Discover &amp; Trust</div>
+      <div class="zd">A versioned catalog where each dataset carries an explicit confidence tier — Research, Staging, Production. Tier promotion requires human sign-off. The tier is the team's shared confidence signal.</div>
+      <div class="zdiv"></div>
+      <div class="zsteps">
+        <div class="zsi"><div class="dsm"></div>Research — first registered, explorable</div>
+        <div class="zsi"><div class="dsm"></div>Staging — team-reviewed, backtest-safe</div>
+        <div class="zsi"><div class="dsm"></div>Production — <em style="color:var(--hu)">promoted by team</em> (TP 3)</div>
+        <div class="zsi"><div class="dsm"></div>Full-text search + lineage tracking</div>
+        <div class="zsi"><div class="dsm"></div>Auto-updated by incremental sync</div>
+      </div>
+    </div>
+  </div>
+  <div class="sfrow">
+    <span class="sf-zone-lbl sfz1">Zone 1</span>
+    <span class="sf-arr">→</span>
+    <span class="sf-step">Scan</span><span class="sf-arr">→</span>
+    <span class="sf-step">Propose</span><span class="sf-arr">→</span>
+    <span class="sf-step">Trial</span><span class="sf-arr">→</span>
+    <span class="sf-step">Schedule<span class="sf-touch">TP1</span></span><span class="sf-arr">→</span>
+    <span class="sf-step">Full Extract</span>
+    <div class="sf-mid-arr"><div class="sf-mid-ln"></div><div class="sf-mid-hd"></div></div>
+    <span class="sf-zone-lbl sfz2">Zone 2</span>
+    <span class="sf-arr">→</span>
+    <span class="sf-step">Detect-Normalize</span><span class="sf-arr">→</span>
+    <span class="sf-step">CM Check</span><span class="sf-arr">→</span>
+    <span class="sf-step">Spec<span class="sf-touch">TP2</span></span><span class="sf-arr">→</span>
+    <span class="sf-step">Transform</span><span class="sf-arr">→</span>
+    <span class="sf-step">Register</span>
+    <div class="sf-mid-arr"><div class="sf-mid-ln"></div><div class="sf-mid-hd"></div></div>
+    <span class="sf-zone-lbl sfz3">Zone 3</span>
+    <span class="sf-arr">→</span>
+    <span class="sf-step">Research</span><span class="sf-arr">→</span>
+    <span class="sf-step">Staging<span class="sf-touch">TP3</span></span><span class="sf-arr">→</span>
+    <span class="sf-step">Production</span>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+     S5 · ZONE 1
+══════════════════════════════════ -->
+<div class="slide" id="s5" data-label="Zone 1 · Data Source">
+  <div class="eye z1">Zone 1 · Data Source</div>
+  <h2 class="hl" style="font-size:clamp(1.2rem,2.1vw,1.8rem);margin-bottom:.28rem">
+    From Database Credentials to Validated Extract
+  </h2>
+  <p style="font-size:.81rem;color:var(--mid);line-height:1.65;max-width:820px;margin-bottom:0">
+    Zone 1 is designed to prove the extraction is worth doing before committing to a full historical pull.
+    AI handles schema analysis and script generation. <span style="color:var(--hu);font-weight:600">You make one decision: is this data worth extracting?</span>
+    That's the only human step we could not design away.
+  </p>
+  <div class="g3">
+    <div class="sc z1" data-n="01">
+      <div class="stop"><span class="snum">01 <span class="st st-live" style="margin-left:.3rem">Live</span></span><span class="badge bd">No AI</span></div>
+      <div class="snm">Scan</div>
+      <div class="sdesc">Queries <code>information_schema</code> — every table, column, index, and row-count estimate. No actual row data downloaded. The metadata snapshot is the sole input for AI table selection.</div>
+    </div>
+    <div class="sc z1" data-n="02">
+      <div class="stop"><span class="snum">02 <span class="st st-live" style="margin-left:.3rem">Live</span></span><span class="badge bc">Claude</span></div>
+      <div class="snm">Propose</div>
+      <div class="sdesc">AI applies domain knowledge to surface research-relevant tables: price series, factor data, corporate actions, reference data. Operational tables — audit logs, sessions — filtered automatically.</div>
+    </div>
+    <div class="sc z1" data-n="03">
+      <div class="stop"><span class="snum">03 <span class="st st-live" style="margin-left:.3rem">Live</span></span><span class="badge bc">Claude</span></div>
+      <div class="snm">Trial</div>
+      <div class="sdesc">AI samples rows, writes <code>extract_script.py</code>, runs it via PostToolUse hook. Errors feed back as context. You review a preview — null rate, date coverage, value range — then mark each table <strong>Selected</strong> or <strong>Rejected</strong>.</div>
+    </div>
+  </div>
+  <div class="g2">
+    <div class="sc z1" data-n="04">
+      <div class="stop"><span class="snum">04 <span class="st st-live" style="margin-left:.3rem">Live</span></span><span class="badge bh">You decide</span></div>
+      <div class="snm">Schedule</div>
+      <div class="sdesc">Set the sync cadence — daily, weekly, monthly. <strong>This is Touchpoint 1</strong>: the only decision you make in Zone 1. All downstream operations run on this interval automatically.</div>
+    </div>
+    <div class="sc z1" data-n="05">
+      <div class="stop"><span class="snum">05 <span class="st st-live" style="margin-left:.3rem">Live</span></span><span class="badge bc">Claude</span></div>
+      <div class="snm">Full Extract</div>
+      <div class="sdesc">Historical pull working day-by-day across the full date range. Empty dates skipped intelligently. Per-day Parquet merged via DuckDB streaming into <code>extract_data.parquet</code>, then Zone 2 triggered.</div>
+    </div>
+  </div>
+  <div class="strip">
+    <span class="strip-tag ba" style="background:rgba(96,165,250,.1);color:var(--au)">Recurring <span class="st st-live" style="margin-left:.3rem">Live</span></span>
+    <span class="strip-body">After onboarding, <strong>Incremental Extract</strong> runs on the configured schedule — reusing <code>extract_script.py</code>, fetching recent days, and triggering Zone 2. The design goal: no manual action needed for routine data updates.</span>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+     S6 · ZONE 2
+══════════════════════════════════ -->
+<div class="slide" id="s6" data-label="Zone 2 · Pipeline">
+  <div class="eye z2">Zone 2 · Pipeline</div>
+  <h2 class="hl" style="font-size:clamp(1.2rem,2.1vw,1.8rem);margin-bottom:.28rem">
+    Five Steps from Raw Parquet to Catalog Entry
+  </h2>
+  <p style="font-size:.81rem;color:var(--mid);line-height:1.65;max-width:820px;margin-bottom:0">
+    Zone 2 is triggered when Zone 1 completes. <strong style="color:var(--txt)">AI steps handle interpretation where context matters.
+    Deterministic gates enforce measurable standards where rules are sufficient.</strong> The alternation is deliberate — interpretation and enforcement are different problems.
+  </p>
+  <div class="pattern-bar">
+    <div class="pb-step pb-ai">
+      <span class="pb-badge">AI · Claude</span>
+      <span class="pb-name">Detect-Normalize</span>
+    </div>
+    <div class="pb-arr">&#8594;</div>
+    <div class="pb-step pb-gate">
+      <span class="pb-badge">Gate · 6 Rules</span>
+      <span class="pb-name">CM Check</span>
+    </div>
+    <div class="pb-arr">&#8594;</div>
+    <div class="pb-step pb-ai">
+      <span class="pb-badge">AI · Claude</span>
+      <span class="pb-name">Spec</span>
+    </div>
+    <div class="pb-arr">&#8594;</div>
+    <div class="pb-step pb-ai">
+      <span class="pb-badge">AI · Claude</span>
+      <span class="pb-name">Transform</span>
+    </div>
+    <div class="pb-arr">&#8594;</div>
+    <div class="pb-step pb-det">
+      <span class="pb-badge">Det · API</span>
+      <span class="pb-name">Register</span>
+    </div>
+  </div>
+  <div class="g3">
+    <div class="sc z2" data-n="01">
+      <div class="stop"><span class="snum">Z2-01 <span class="st st-live" style="margin-left:.3rem">Live</span></span><span class="badge bc">Claude</span></div>
+      <div class="snm">Detect-Normalize</div>
+      <div class="sdesc">AI classifies every column: entity ID, date, value, metadata. Renames to canonical form (<code>entity</code>, <code>date</code>, <code>value</code>). Handles multi-value tables by detecting primary value column.</div>
+    </div>
+    <div class="sc z2" data-n="02">
+      <div class="stop"><span class="snum">Z2-02 <span class="st st-live" style="margin-left:.3rem">Live</span></span><span class="badge ba">Gate</span></div>
+      <div class="snm">CM Check</div>
+      <div class="sdesc">6 deterministic quality gates: entity column present, date parseable, value numeric, null rate below threshold, no duplicate (entity, date) rows, minimum row count. Output: <strong>QUALIFIED / CONDITIONS / REJECTED</strong>.</div>
+    </div>
+    <div class="sc z2" data-n="03">
+      <div class="stop"><span class="snum">Z2-03 <span class="st st-live" style="margin-left:.3rem">Live</span></span><span class="badge bc">Claude</span></div>
+      <div class="snm">Spec</div>
+      <div class="sdesc">AI defines <code>cm_id</code> (universe.name), entity dimension type, value semantics. If ambiguous — e.g., adjusted vs unadjusted price — <strong>pauses and asks you</strong> (Touchpoint 2, often skipped).</div>
+    </div>
+  </div>
+  <div class="g2">
+    <div class="sc z2" data-n="04">
+      <div class="stop"><span class="snum">Z2-04 <span class="st st-live" style="margin-left:.3rem">Live</span></span><span class="badge bc">Claude</span></div>
+      <div class="snm">Transform</div>
+      <div class="sdesc">Pivots long-format rows into a 2D (date × entity) Parquet — the standard Content Model format used across all Arkraft strategies. DuckDB streaming for large datasets.</div>
+    </div>
+    <div class="sc z2" data-n="05">
+      <div class="stop"><span class="snum">Z2-05 <span class="st st-live" style="margin-left:.3rem">Live</span></span><span class="badge bd">Deterministic</span></div>
+      <div class="snm">Register</div>
+      <div class="sdesc">Writes to catalog API: <code>cm_id</code> uniqueness validated, schema registered, full lineage traced back to source DB and extraction run. No AI — the registration record is a contract.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+     S7 · ZONE 3 — CATALOG
+══════════════════════════════════ -->
+<div class="slide" id="s7" data-label="Zone 3 · Catalog">
+  <div class="eye z3">Zone 3 · Catalog</div>
+  <h2 class="hl" style="font-size:clamp(1.2rem,2.1vw,1.8rem);margin-bottom:.28rem">
+    The Trust Model: Explicit Tiers, Human-Approved Promotion
+  </h2>
+  <p style="font-size:.81rem;color:var(--mid);line-height:1.65;max-width:820px;margin-bottom:.1rem">
+    The catalog is designed around a specific problem: without shared standards,
+    researchers don't know if a colleague's dataset has been spot-checked or not.
+    Our approach: each dataset carries an explicit tier. Tier promotions require human sign-off
+    and are logged — there's always a name behind a Production-grade dataset.
+  </p>
+  <div class="tiers">
+    <div class="tc tr">
+      <div class="tl">Research <span class="st st-live">Live</span></div>
+      <div class="tt">First Contact</div>
+      <div class="tuse">Hypothesis Exploration</div>
+      <div class="tb">Auto-registered when Zone 2 completes. Available immediately for exploration — but treat the data as unverified. If your backtest uses only Research-tier data, you should be skeptical of the results.</div>
+      <div class="tier-features">
+        <div class="tf"><div class="tf-dot"></div>Safe for: "does this data exist and make sense?"</div>
+        <div class="tf"><div class="tf-dot"></div>Full lineage to source DB, auto-refreshed</div>
+        <div class="tf"><div class="tf-dot"></div>⚠ Not yet human-reviewed — use with caution</div>
+      </div>
+    </div>
+    <div class="tcon">
+      <div class="tcon-ln"></div>
+      <div class="tcon-lbl">Researcher<br>reviews &amp;<br>promotes</div>
+      <div class="tcon-hd"></div>
+    </div>
+    <div class="tc ts">
+      <div class="tl">Staging <span class="st st-live">Live</span></div>
+      <div class="tt">Team Validated</div>
+      <div class="tuse">Backtest Safe</div>
+      <div class="tb">Manually promoted after a researcher reviews date coverage, value distributions, and spot-checks entity counts. At least one person has verified this data is reasonable for research.</div>
+      <div class="tier-features">
+        <div class="tf"><div class="tf-dot"></div>Safe for: strategy development &amp; backtesting</div>
+        <div class="tf"><div class="tf-dot"></div>Human-reviewed coverage and distributions</div>
+        <div class="tf"><div class="tf-dot"></div>Promotion logged with reviewer identity</div>
+      </div>
+    </div>
+    <div class="tcon">
+      <div class="tcon-ln"></div>
+      <div class="tcon-lbl">Team<br>consensus<br>required</div>
+      <div class="tcon-hd"></div>
+    </div>
+    <div class="tc tp">
+      <div class="tl">Production <span class="st st-live">Live</span></div>
+      <div class="tt">Live Strategy Grade</div>
+      <div class="tuse">Live Strategies</div>
+      <div class="tb">Requires team consensus to promote. The highest confidence level. Used in live alpha strategies. Nightly incremental sync keeps Production data current — and any quality regression notifies the team.</div>
+      <div class="tier-features">
+        <div class="tf"><div class="tf-dot"></div>Safe for: live strategy execution</div>
+        <div class="tf"><div class="tf-dot"></div>Auto-updated nightly, quality re-checked</div>
+        <div class="tf"><div class="tf-dot"></div>Regression alert → notifies approver directly</div>
+      </div>
+    </div>
+  </div>
+  <div class="tresearch-note">
+    <strong>The underlying problem:</strong> Without a shared signal, teams can't tell if a backtest was run on data that someone has spot-checked vs data that was auto-registered and never verified. The tier system is designed to make that distinction explicit. <em style="color:var(--mid)">Research tier = auto-registered, unverified. Production tier = team has reviewed it deliberately.</em>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+     S8 · HUMAN IN THE LOOP
+══════════════════════════════════ -->
+<div class="slide" id="s8" data-label="Human in the Loop">
+  <div class="eye warn">Human Judgment Model</div>
+  <h2 class="hl" style="font-size:clamp(1.4rem,2.5vw,2.1rem);margin-bottom:.32rem">
+    Three Irreducible Human Decisions
+  </h2>
+  <p style="font-size:.83rem;color:var(--mid);max-width:720px;line-height:1.65;margin-bottom:.1rem">
+    We started by asking: which steps genuinely require domain expertise, and which only
+    <em>feel</em> like they do? The pipeline is designed so human judgment is
+    <strong style="color:var(--txt)">required only where it cannot be substituted by rules or AI context</strong> —
+    three specific moments, no more.
+  </p>
+  <div class="mgrid">
+    <div class="mc">
+      <div class="mnum">01</div>
+      <div class="mwhen">Zone 1 · After Trial</div>
+      <div class="mttl">Review &amp; Select Datasets</div>
+      <div class="mbdy">After AI runs trial extractions, you see a data preview: null rate, date coverage, value distribution. You decide which tables are worth extracting — <strong>Selected</strong> or <strong>Rejected</strong>.</div>
+      <div class="mwhy"><strong>Why human?</strong> AI can identify research-relevant schema patterns, but only a researcher knows if this specific dataset fits the strategy thesis and is worth the ongoing compute.</div>
+    </div>
+    <div class="mc">
+      <div class="mnum">02</div>
+      <div class="mwhen">Zone 2 · During Spec — If Needed</div>
+      <div class="mttl">Answer Spec Questions</div>
+      <div class="mbdy">If AI is uncertain about cm_id, entity dimension, or value semantics — it pauses and asks. If the spec is unambiguous, this touchpoint never occurs. <strong>Most runs skip it entirely.</strong></div>
+      <div class="mwhy"><strong>Why human?</strong> "Is this adjusted or unadjusted close price?" is a financial domain question, not a data structure question. AI can detect ambiguity but not resolve it without context.</div>
+    </div>
+    <div class="mc">
+      <div class="mnum">03</div>
+      <div class="mwhen">Zone 3 · Catalog</div>
+      <div class="mttl">Approve Quality Upgrades</div>
+      <div class="mbdy">Manually promote datasets from Research → Staging → Production as confidence grows. Each upgrade is an explicit, traceable decision — the system never auto-promotes.</div>
+      <div class="mwhy"><strong>Why human?</strong> Live strategy data demands human accountability. If a Production dataset degrades, someone signed off on it — the system can page that person directly.</div>
+    </div>
+  </div>
+  <div class="astrip">
+    <div class="astrip-ico">🔄</div>
+    <div class="astrip-txt">After the three initial decisions, the <em>recurring sync loop</em> — Incremental Extract → Zone 2 → Catalog update — is designed to run on the configured schedule without human intervention. This is the design target; the system surfaces alerts when something needs attention.</div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+     S9 · IMPLEMENTATION STATUS
+══════════════════════════════════ -->
+<div class="slide" id="s9" data-label="Implementation Status">
+  <div class="eye">Where We Are</div>
+  <h2 class="hl" style="font-size:clamp(1.4rem,2.5vw,2.1rem);margin-bottom:.32rem">
+    Where the Build Is Now
+  </h2>
+  <p style="font-size:.83rem;color:var(--mid);max-width:720px;line-height:1.65;margin-bottom:.1rem">
+    The core three-zone pipeline is running on live data. Active development is focused on catalog intelligence — making the system more self-correcting and easier to navigate at scale.
+  </p>
+  <div class="status-grid">
+    <div class="sg-col">
+      <div class="sg-col-hdr">
+        <div class="sg-col-icon live">✅</div>
+        <div>
+          <div class="sg-col-title" style="color:var(--live)">In Production</div>
+          <div class="sg-col-sub">Running on live data today</div>
+        </div>
+      </div>
+      <div class="sg-item"><span class="sg-item-name">Scan · Propose · Trial</span><span class="sg-item-zone sgz1">Z1</span></div>
+      <div class="sg-item"><span class="sg-item-name">Schedule &amp; Full Extract</span><span class="sg-item-zone sgz1">Z1</span></div>
+      <div class="sg-item"><span class="sg-item-name">Incremental Extract</span><span class="sg-item-zone sgz1">Z1</span></div>
+      <div class="sg-item"><span class="sg-item-name">Detect-Normalize</span><span class="sg-item-zone sgz2">Z2</span></div>
+      <div class="sg-item"><span class="sg-item-name">CM Check (6 gates)</span><span class="sg-item-zone sgz2">Z2</span></div>
+      <div class="sg-item"><span class="sg-item-name">Spec · Transform · Register</span><span class="sg-item-zone sgz2">Z2</span></div>
+      <div class="sg-item"><span class="sg-item-name">Research / Staging / Production</span><span class="sg-item-zone sgz3">Z3</span></div>
+      <div class="sg-item"><span class="sg-item-name">Lineage tracking</span><span class="sg-item-zone sgz3">Z3</span></div>
+    </div>
+    <div class="sg-col beta-col">
+      <div class="sg-col-hdr">
+        <div class="sg-col-icon beta">⚡</div>
+        <div>
+          <div class="sg-col-title" style="color:var(--beta)">In Development</div>
+          <div class="sg-col-sub">Active work, near-term release</div>
+        </div>
+      </div>
+      <div class="sg-item"><span class="sg-item-name">Column annotations &amp; descriptions</span><span class="sg-item-zone sgz2">Z2</span></div>
+      <div class="sg-item"><span class="sg-item-name">Batch multi-source onboarding</span><span class="sg-item-zone sgz1">Z1</span></div>
+      <div class="sg-item"><span class="sg-item-name">Dataset dependency graph</span><span class="sg-item-zone sgz3">Z3</span></div>
+      <div class="sg-item"><span class="sg-item-name">Quality regression alerts</span><span class="sg-item-zone sgz3">Z3</span></div>
+      <div class="sg-item"><span class="sg-item-name">Extraction script self-healing</span><span class="sg-item-zone sgz1">Z1</span></div>
+    </div>
+    <div class="sg-col plan-col">
+      <div class="sg-col-hdr">
+        <div class="sg-col-icon plan">◯</div>
+        <div>
+          <div class="sg-col-title" style="color:#64748b">Roadmap</div>
+          <div class="sg-col-sub">Planned future capabilities</div>
+        </div>
+      </div>
+      <div class="sg-item"><span class="sg-item-name">Natural language data discovery</span><span class="sg-item-zone sgz3">Z3</span></div>
+      <div class="sg-item"><span class="sg-item-name">"Find me daily price data for..."</span><span class="sg-item-zone sgz3">Z3</span></div>
+      <div class="sg-item"><span class="sg-item-name">Cross-dataset join suggestions</span><span class="sg-item-zone sgz3">Z3</span></div>
+      <div class="sg-item"><span class="sg-item-name">Auto schema drift detection</span><span class="sg-item-zone sgz1">Z1</span></div>
+      <div class="sg-item"><span class="sg-item-name">Scheduled re-validation (Production)</span><span class="sg-item-zone sgz3">Z3</span></div>
+    </div>
+  </div>
+  <div class="roadmap-note">
+    <div class="rn-icon">🧭</div>
+    <div class="rn-text"><strong>Where we're headed:</strong> The core pipeline handles extraction, quality gating, and catalog registration. The next problem: as the catalog grows, discovery and comparison become harder. Future work focuses on catalog intelligence — surfacing quality signals proactively before researchers encounter them in a backtest.</div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+     S10 · DESIGN DECISIONS
+══════════════════════════════════ -->
+<div class="slide" id="s10" data-label="Design Decisions">
+  <div class="eye">Design Thinking</div>
+  <h2 class="hl" style="font-size:clamp(1.4rem,2.5vw,2.1rem);margin-bottom:.3rem">
+    Why This Architecture? Three Deliberate Choices.
+  </h2>
+  <p style="font-size:.83rem;color:var(--mid);max-width:720px;line-height:1.65;margin-bottom:.2rem">
+    Each design decision resolves a specific tension. Understanding them explains
+    why the pipeline looks the way it does — and what we're still working out.
+  </p>
+  <div class="g3" style="margin-top:.7rem">
+    <div class="sc" data-n="1" style="border-color:rgba(251,113,133,.2)">
+      <div class="stop">
+        <span class="snum" style="color:var(--cl)">Decision 01</span>
+        <span class="badge bc">AI + Gates</span>
+      </div>
+      <div class="snm">Why alternate AI and deterministic gates?</div>
+      <div class="sdesc">Early version: fully AI-driven pipeline. Problem: errors compound across steps — by step 5, you can't tell what went wrong or why. Current design: AI handles interpretation, gates handle enforcement. If a dataset passes CM Check, it has <strong>provably met 6 measurable criteria</strong> — traceable and auditable, no matter which model ran.</div>
+      <div style="margin-top:.65rem;padding:.5rem .7rem;background:rgba(251,113,133,.04);border:1px solid rgba(251,113,133,.12);border-radius:6px;font-size:.71rem;color:var(--mid);line-height:1.5">
+        <strong style="color:var(--cl)">Still working on:</strong> What happens when source data changes enough that a previously passing dataset now fails a gate? The re-validation pathway is being designed.
+      </div>
+    </div>
+    <div class="sc" data-n="2" style="border-color:rgba(251,191,36,.2)">
+      <div class="stop">
+        <span class="snum" style="color:var(--hu)">Decision 02</span>
+        <span class="badge bh">3 Touchpoints</span>
+      </div>
+      <div class="snm">Why exactly 3 human decisions, not 0?</div>
+      <div class="sdesc">We tried designing for zero human input. Three problems resisted automation: (1) <strong>Is this table worth the ongoing compute?</strong> — requires knowing the strategy thesis. (2) <strong>Is this field adjusted or unadjusted?</strong> — requires financial domain knowledge. (3) <strong>Is this data reliable enough for live strategies?</strong> — requires human accountability. These aren't automatable; they require judgment.</div>
+      <div style="margin-top:.65rem;padding:.5rem .7rem;background:rgba(251,191,36,.04);border:1px solid rgba(251,191,36,.12);border-radius:6px;font-size:.71rem;color:var(--mid);line-height:1.5">
+        <strong style="color:var(--hu)">Open question:</strong> Touchpoint 2 (Spec disambiguation) is skipped most of the time. Can we reduce it further, or is occasional ambiguity unavoidable?
+      </div>
+    </div>
+    <div class="sc" data-n="3" style="border-color:rgba(52,211,153,.2)">
+      <div class="stop">
+        <span class="snum" style="color:var(--z3)">Decision 03</span>
+        <span class="badge" style="background:rgba(52,211,153,.12);color:var(--z3)">CM Format</span>
+      </div>
+      <div class="snm">Why a standardized 2D format for the catalog?</div>
+      <div class="sdesc">The catalog's value is <strong>joinability</strong> — datasets can be combined because they share a canonical form: a 2D date × entity Parquet matrix. This enables cross-dataset strategy building without ad-hoc alignment. Trade-off: some datasets don't fit cleanly (multi-dimensional data, irregular series). These either get forced into the model or can't be catalogued.</div>
+      <div style="margin-top:.65rem;padding:.5rem .7rem;background:rgba(52,211,153,.04);border:1px solid rgba(52,211,153,.12);border-radius:6px;font-size:.71rem;color:var(--mid);line-height:1.5">
+        <strong style="color:var(--z3)">Still working on:</strong> How to handle datasets that are naturally multi-dimensional (e.g., options chains, order books). Force-fit to 2D loses information.
+      </div>
+    </div>
+  </div>
+  <div class="roadmap-note" style="margin-top:.8rem">
+    <div class="rn-icon">💬</div>
+    <div class="rn-text">These decisions shape the constraints we're building within. The architecture isn't finished — it's a working hypothesis being tested on real data sources. The design direction is toward a catalog that <strong>actively surfaces data quality issues before researchers encounter them</strong>, rather than waiting for a backtest to fail.</div>
+  </div>
+</div>
+
+</div><!-- #deck -->
+
+<script>
+const slides = Array.from(document.querySelectorAll('.slide'));
+const labels = slides.map(s => s.dataset.label || '');
+const total = slides.length;
+let cur = 0;
+
+const dotsEl = document.getElementById('dots');
+const ctrEl = document.getElementById('ctr');
+const labelEl = document.getElementById('slide-label');
+
+// Build dots
+slides.forEach((_, i) => {
+  const d = document.createElement('div');
+  d.className = 'dot' + (i === 0 ? ' on' : '');
+  d.addEventListener('click', () => go(i));
+  dotsEl.appendChild(d);
+});
+
+function go(n) {
+  if (n === cur) return;
+  slides[cur].classList.remove('active');
+  slides[cur].classList.add('out');
+  setTimeout(() => slides[cur < n ? cur : n + 1] && slides[cur < n ? cur : n + 1] !== slides[cur] ? null : null, 280);
+  const prev = cur;
+  cur = Math.max(0, Math.min(total - 1, n));
+  slides[prev].classList.remove('active');
+  slides[prev].classList.add('out');
+  setTimeout(() => slides[prev].classList.remove('out'), 280);
+  slides[cur].classList.add('active');
+  dotsEl.querySelectorAll('.dot').forEach((d, i) => d.classList.toggle('on', i === cur));
+  ctrEl.textContent = `${cur + 1} / ${total}`;
+  labelEl.textContent = labels[cur] || '';
+}
+
+document.getElementById('bn').addEventListener('click', () => go(cur + 1));
+document.getElementById('bp').addEventListener('click', () => go(cur - 1));
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown') go(cur + 1);
+  if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') go(cur - 1);
+});
+
+let tx = 0;
+document.addEventListener('touchstart', e => { tx = e.touches[0].clientX; });
+document.addEventListener('touchend', e => {
+  const dx = e.changedTouches[0].clientX - tx;
+  if (Math.abs(dx) > 50) go(dx < 0 ? cur + 1 : cur - 1);
+});
+</script>
+</body>
+</html>
